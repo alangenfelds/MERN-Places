@@ -43,7 +43,9 @@ app.use((error, req, res, next) => {
   // delete uploaded file in case of error
   if (req.file) {
     fs.unlink(req.file.path, (err) => {
-      console.log("file deletion failed: ", err);
+      if (err) {
+        console.log("file deletion failed: ", err);
+      }
     });
   }
   if (res.headerSent) {

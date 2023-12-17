@@ -85,7 +85,7 @@ const Auth = () => {
 
       try {
         const responseData = await sendRequest(url, method, body, headers);
-        auth.login(responseData.user.id);
+        auth.login(responseData.userId, responseData.token);
       } catch (err) {}
     } else {
       try {
@@ -95,7 +95,7 @@ const Auth = () => {
         formData.append("password", formState.inputs.password.value);
         formData.append("image", formState.inputs.image.value);
 
-        await sendRequest(
+        const responseData = await sendRequest(
           "http://localhost:5000/api/users/signup",
           "POST",
           // JSON.stringify({
@@ -108,7 +108,7 @@ const Auth = () => {
           //   "Content-Type": "application/json",
           // }
         );
-        auth.login();
+        auth.login(responseData.userId, responseData.token);
       } catch (err) {}
     }
   };

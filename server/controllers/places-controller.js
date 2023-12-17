@@ -64,7 +64,7 @@ const createPlace = async (req, res, next) => {
     return next(new HttpError("Please enter valid data", 422));
   }
 
-  const { title, description, address, creator } = req.body; // already parsed to JSON thanks to bodyParser middleware
+  const { title, description, address } = req.body; // already parsed to JSON thanks to bodyParser middleware
 
   let coordinates;
 
@@ -81,13 +81,13 @@ const createPlace = async (req, res, next) => {
     address,
     image: req.file.path,
     location: coordinates,
-    creator,
+    creator: req.userData.userId,
   });
 
   let user;
 
   try {
-    user = await User.findById(creator);
+    user = await User.findById(req.userData.userId);
   } catch (err) {
     const error = new HttpError(
       "Creating place failed, please try again!",
@@ -142,6 +142,11 @@ const updatePlace = async (req, res, next) => {
     return next(error);
   }
 
+  if (place.creator.toString() !== req.userData.userId) {
+    const error = new HttpError("Unauthorized to edit place", 401);
+    return next(error);
+  }
+
   place.title = title;
   place.description = description;
 
@@ -172,6 +177,11 @@ const deletePlace = async (req, res, next) => {
     return next(error);
   }
 
+  if (place.creator.id !== req.userData.userId) {
+    const error = new HttpError("Unauthorized to delete place", 401);
+    return next(error);
+  }
+
   const imagePath = place.image;
 
   try {
@@ -188,7 +198,9 @@ const deletePlace = async (req, res, next) => {
   }
 
   fs.unlink(imagePath, (err) => {
-    console.log("Failed to delete image. ", err);
+    if (err) {
+      console.log("Failed to delete image. ", err);
+    }
   });
 
   res.status(200).json({ message: "Place is deleted" });

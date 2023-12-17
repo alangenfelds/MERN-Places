@@ -1,6 +1,10 @@
-const HttpError = require("../models/http-error");
-const { validationResult } = require("express-validator");
+require("dotenv").config();
 
+const { validationResult } = require("express-validator");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+const HttpError = require("../models/http-error");
 const User = require("../models/user");
 
 const getUsers = async (req, res, next) => {
@@ -44,11 +48,23 @@ const signup = async (req, res, next) => {
     return next(error);
   }
 
+  let hashedPassword;
+
+  try {
+    hashedPassword = await bcrypt.hash(password, 12);
+  } catch (err) {
+    const error = new HttpError(
+      "Failed to create user. Please try again!",
+      500
+    );
+    return next(error);
+  }
+
   const newUser = new User({
     name,
     email,
     image: req.file.path,
-    password,
+    password: hashedPassword,
     places: [],
   });
 
@@ -60,7 +76,28 @@ const signup = async (req, res, next) => {
     return next(error);
   }
 
-  res.status(201).json({ message: "User created successfully" });
+  let token;
+
+  try {
+    token = jwt.sign(
+      {
+        userId: newUser.id,
+        email: newUser.email,
+      },
+      process.env.JWT_PRIVATE_KEY,
+      { expiresIn: "1h" }
+    );
+  } catch (err) {
+    const error = new HttpError("Signing up failed!", 500);
+    return next(error);
+  }
+
+  res.status(201).json({
+    message: "User created successfully",
+    userId: newUser.id,
+    email: newUser.email,
+    token,
+  });
 };
 
 const login = async (req, res, next) => {
@@ -78,19 +115,54 @@ const login = async (req, res, next) => {
     return next(error);
   }
 
-  if (!existingUser || existingUser.password !== password) {
+  if (!existingUser) {
+    return next(new HttpError("User not found or credentials are wrong", 403));
+  }
+
+  let isValidPassword = false;
+
+  try {
+    isValidPassword = await bcrypt.compare(password, existingUser.password);
+  } catch (err) {
+    const error = new HttpError(
+      "Logging in failed, please try again later!",
+      500
+    );
+    return next(error);
+  }
+
+  if (!isValidPassword) {
     return next(new HttpError("User not found or credentials are wrong", 401));
+  }
+
+  let token;
+
+  try {
+    token = jwt.sign(
+      {
+        userId: existingUser.id,
+        email: existingUser.email,
+      },
+      process.env.JWT_PRIVATE_KEY,
+      { expiresIn: "1h" }
+    );
+  } catch (err) {
+    const error = new HttpError("Logging in failed!", 500);
+    return next(error);
   }
 
   res.status(200).json({
     message: "Logged in succesfully!",
-    user: existingUser.toObject({
-      getters: true,
-      transform: (doc, ret) => {
-        delete ret.password;
-        return ret;
-      },
-    }),
+    // user: existingUser.toObject({
+    //   getters: true,
+    //   transform: (doc, ret) => {
+    //     delete ret.password;
+    //     return ret;
+    //   },
+    // }),
+    userId: existingUser.id,
+    email: existingUser.email,
+    token,
   });
 };
 
