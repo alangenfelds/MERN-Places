@@ -43,7 +43,7 @@ const UpdatePlace = () => {
     const fetchPlace = async () => {
       try {
         const response = await sendRequest(
-          `http://localhost:5000/api/places/${placeId}`
+          process.env.REACT_APP_BASE_URL + `/api/places/${placeId}`
         );
 
         setFormData(
@@ -71,7 +71,7 @@ const UpdatePlace = () => {
 
     try {
       await sendRequest(
-        `http://localhost:5000/api/places/${placeId}`,
+        process.env.REACT_APP_BASE_URL + `/api/places/${placeId}`,
         "PATCH",
         JSON.stringify({
           title: formState.inputs.title.value,

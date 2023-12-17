@@ -72,7 +72,11 @@ const Auth = () => {
     event.preventDefault();
 
     if (isLoginMode) {
-      const url = "http://localhost:5000/api/users/login";
+      console.log(
+        "isLoginMode process.env.REACT_APP_BASE_URL",
+        process.env.REACT_APP_BASE_URL
+      );
+      const url = process.env.REACT_APP_BASE_URL + "/api/users/login";
       const method = "POST";
 
       const headers = {
@@ -96,7 +100,7 @@ const Auth = () => {
         formData.append("image", formState.inputs.image.value);
 
         const responseData = await sendRequest(
-          "http://localhost:5000/api/users/signup",
+          process.env.REACT_APP_BASE_URL + "/api/users/signup",
           "POST",
           // JSON.stringify({
           //   name: formState.inputs.name.value,

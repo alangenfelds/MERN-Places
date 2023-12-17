@@ -64,6 +64,5 @@ mongoose
     app.listen(5000);
   })
   .catch((error) => {
-    console.log("process.env.MONGO_USER", process.env.MONGO_USER);
     console.log("Error: ", error);
   });
